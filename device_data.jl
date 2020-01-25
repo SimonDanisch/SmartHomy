@@ -1,18 +1,18 @@
 @enum UpdateType Queued DropWhileBusy DropAllButLast
 
-struct DeviceData
+struct DeviceQueue
     type::UpdateType
     task::Task
     channel::Channel
     processing::Threads.Atomic{Bool}
 end
 
-isprocessing(x::DeviceData) = x.processing[]
+isprocessing(x::DeviceQueue) = x.processing[]
 
-function DeviceData(type::UpdateType)
+function DeviceQueue(type::UpdateType)
     channel = type == Queued ? Channel() : Channel(1)
     processing = Threads.Atomic{Bool}(false)
-    task = Threads.@spawn while true
+    task = @async while true
         # While we have tasks, execute them!
         f = take!(channel)
         try
@@ -24,10 +24,10 @@ function DeviceData(type::UpdateType)
             processing[] = false
         end
     end
-    return DeviceData(type, task, channel, processing)
+    return DeviceQueue(type, task, channel, processing)
 end
 
-function Base.put!(new_task::Function, x::DeviceData)
+function Base.put!(new_task::Function, x::DeviceQueue)
     if x.type == DropWhileBusy
         if !isready(x.channel) # channel already full
             if !isprocessing(x) # only put new channel, if not processing

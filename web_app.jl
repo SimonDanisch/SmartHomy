@@ -18,10 +18,6 @@ hm3301 = HM3301()
 lywsd02 = LYWSD02("E7:2E:00:B0:70:A4")
 dht = DHTSensor(22, 22)
 
-stop!(dht)
-stop!(lywsd02)
-stop!(hm3301)
-
 start!(dht)
 start!(lywsd02)
 start!(hm3301)

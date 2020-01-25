@@ -1,4 +1,6 @@
-abstract type AbstractLight end
+abstract type SmartDevice end
+abstract type AbstractLight <: SmartDevice end
+abstract type AbstractSwitch <: SmartDevice end
 
 supports(light::AbstractLight, func) = false
 
@@ -18,18 +20,18 @@ function brightness!(light::AbstractLight, value::Number)
     end
 end
 
-set_temperature!(light::AbstractLight, value::Number) = error("Not Implemented")
-temperature(light::AbstractLight) = error("Not Implemented")
+set_color_temperature!(light::AbstractLight, value::Number) = error("Not Implemented")
+color_temperature(light::AbstractLight) = error("Not Implemented")
 
-function temperature!(light::AbstractLight, value::Number)
-    if !supports(light, temperature)
-        error("Light does not support setting temperature")
+function color_temperature!(light::AbstractLight, value::Number)
+    if !supports(light, color_temperature)
+        error("Light does not support setting color_temperature")
     end
     start, stop = temperature_range(light)
     if value >= start && value <= stop
-        set_temperature!(light, value)
+        set_color_temperature!(light, value)
     else
-        throw(ArgumentError("Temperature needs to be between $(start)..$(stop)"))
+        throw(ArgumentError("color_temperature needs to be between $(start)..$(stop)"))
     end
 end
 
@@ -40,7 +42,7 @@ function color!(light::AbstractLight, value::Colorant)
     if !supports(light, color)
         error("Light does not support setting color!")
     end
-    set_temperature!(light, value)
+    set_color!(light, value)
 end
 
 turn_on!(light::AbstractLight) = error("Not Implemented")
@@ -49,35 +51,27 @@ is_on(light::AbstractLight) = false
 
 
 function JSServe.jsrender(light::AbstractLight)
-    light_update_queue = DeviceData(DropAllButLast)
-
     on_off = JSServe.Button(is_on(light) ? "ON" : "OFF", class="btn btn-primary")
     on(on_off.value) do val
-        if is_on(light)
-            put!(light_update_queue) do
-                turn_off!(light)
-                on_off.content[] = "OFF"
-            end
+        if on_off.content[] == "ON"
+            turn_off!(light)
+            on_off.content[] = "OFF"
         else
-            put!(light_update_queue) do
-                turn_on!(light)
-                on_off.content[] = "ON"
-            end
+            turn_on!(light)
+            on_off.content[] = "ON"
         end
     end
 
     elements = Any[on_off]
 
-    if supports(light, temperature)
+    if supports(light, color_temperature)
         start, stop = temperature_range(light)
-        temp = JSServe.Slider(start:100:stop, class="custom-range")
-        temp[] = temperature(light)
+        temp = JSServe.Slider((start+1):100:(stop-1), class="custom-range")
+        temp[] = color_temperature(light)
         on(temp) do val
-            put!(light_update_queue) do
-                temperature!(light, val)
-            end
+            color_temperature!(light, val)
         end
-        el = DOM.div(DOM.p("temperature: ", temp.value), temp)
+        el = DOM.div(DOM.p("color_temperature: ", temp.value), temp)
         push!(elements, el)
     end
 
@@ -85,14 +79,10 @@ function JSServe.jsrender(light::AbstractLight)
         brightness_s = JSServe.Slider(0:5:100)
         brightness_s[] = brightness(light)
         on(brightness_s) do val
-            put!(light_update_queue) do
-                brightness!(light, val)
-            end
+            brightness!(light, val)
         end
         el = DOM.div(DOM.p("brightness: ", brightness_s.value), brightness_s)
         push!(elements, el)
     end
     return DOM.div(elements...)
 end
-
-Threads.nthreads()
