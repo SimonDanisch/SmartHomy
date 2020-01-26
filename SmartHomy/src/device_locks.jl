@@ -19,7 +19,7 @@ function DeviceQueue(type::UpdateType)
             processing[] = true
             Base.invokelatest(f)
         catch e
-            rethrow(e)
+            @info "Error in queue" exception=e
         finally
             processing[] = false
         end
@@ -44,5 +44,15 @@ function Base.put!(new_task::Function, x::DeviceQueue)
         end
     else
         put!(x.channel, new_task)
+    end
+end
+
+dq = DeviceQueue(DropAllButLast)
+
+for i in 1:5
+    put!(dq) do
+        tstart = time()
+        sleep(0.5)
+        println(i)
     end
 end

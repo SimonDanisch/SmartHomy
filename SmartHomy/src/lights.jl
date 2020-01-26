@@ -1,7 +1,3 @@
-abstract type SmartDevice end
-abstract type AbstractLight <: SmartDevice end
-abstract type AbstractSwitch <: SmartDevice end
-
 supports(light::AbstractLight, func) = false
 
 temperature_range(light::AbstractLight) = error("Not Implemented")
@@ -62,11 +58,11 @@ function JSServe.jsrender(light::AbstractLight)
         end
     end
 
-    elements = Any[on_off]
+    elements = Any[DOM.div(name(light)), on_off]
 
     if supports(light, color_temperature)
         start, stop = temperature_range(light)
-        temp = JSServe.Slider((start+1):100:(stop-1), class="custom-range")
+        temp = JSServe.Slider((start+1):10:(stop-1), class="custom-range")
         temp[] = color_temperature(light)
         on(temp) do val
             color_temperature!(light, val)
@@ -76,7 +72,7 @@ function JSServe.jsrender(light::AbstractLight)
     end
 
     if supports(light, brightness)
-        brightness_s = JSServe.Slider(0:5:100)
+        brightness_s = JSServe.Slider(1:5:100)
         brightness_s[] = brightness(light)
         on(brightness_s) do val
             brightness!(light, val)

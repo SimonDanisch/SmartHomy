@@ -1,4 +1,4 @@
-struct Plug <: AbstractSwitch
+struct Plug <: AbstractPlug
     device::DeviceConnection
     sysinfo::Dict
     is_on::Observable{Bool}
@@ -14,14 +14,16 @@ function Sockets.send(success_callback, plug::Plug, message)
 end
 
 function turn_on!(plug::Plug)
-    send(plug, Dict("state" => 1)) do
+    send(plug, Dict("state" => 1)) do response
+        response === nothing && return
         plug.is_on[] = true
     end
     return
 end
 
 function turn_off!(plug::Plug)
-    send(plug, Dict("state" => 0)) do
+    send(plug, Dict("state" => 0)) do response
+        response === nothing && return
         plug.is_on[] = false
     end
     return
