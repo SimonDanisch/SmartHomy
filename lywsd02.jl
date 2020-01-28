@@ -1,5 +1,6 @@
-using SmartHomy: SensorData, AbstractSensor
-import SmartHomy: units
+using SmartHomy: TemperatureHumiditySensor
+using SmartHomy: set!, device
+using Unitful
 
 const Lywsd02Client = pyimport("lywsd02").Lywsd02Client
 
@@ -8,14 +9,15 @@ struct LYWSD02Connection
 end
 
 # LYWSD02("E7:2E:00:B0:70:A4")
-function LYWSD02Connection(mac_address::String)
+function LYWSD02(mac_address::String)
     client = Lywsd02Client(mac_address)
-    return LYWSD02(client, SensorData())
+    conn = LYWSD02Connection(client)
+    return TemperatureHumiditySensor(conn)
 end
 
 function Base.read!(sensor::TemperatureHumiditySensor{LYWSD02Connection})
-    io = connection(sensor)
-    SmartHomy.set!(sensor, :temperature, io.client.temperature)
-    SmartHomy.set!(sensor, :humidity, io.client.humidity)
+    io = device(sensor)
+    set!(sensor, :temperature, io.client.temperature * Unitful.°C)
+    set!(sensor, :humidity, io.client.humidity * Unitful.percent)
     return
 end

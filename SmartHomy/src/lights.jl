@@ -1,4 +1,3 @@
-
 struct Light{T} <: AbstractLight
     device::T
 

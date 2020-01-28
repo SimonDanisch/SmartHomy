@@ -1,4 +1,3 @@
-
 @enum AccesPattern Readonly ReadWrite
 
 struct AttributeField{T, VR}

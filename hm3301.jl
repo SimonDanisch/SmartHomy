@@ -1,4 +1,4 @@
-import SmartHomy: set!
+using SmartHomy: set!, device, μg_m³
 using SmartHomy: DustSensor
 const smbus2 = pyimport("smbus2")
 const i2c_msg = smbus2.i2c_msg
@@ -24,7 +24,7 @@ function HM3301Connection(i2c_address=0x40, select_i2c_address=0x88, data_count=
 end
 
 function HM3301(i2c_address=0x40, select_i2c_address=0x88, data_count=29)
-    conn = HM3301HM3301Connection(i2c_address, select_i2c_address, data_count)
+    conn = HM3301Connection(i2c_address, select_i2c_address, data_count)
     return DustSensor(conn)
 end
 
@@ -43,13 +43,13 @@ function check_crc(data)
 end
 
 function Base.read!(sensor::DustSensor{HM3301Connection})
-    io = connection(sensor)
-    data = read_sensor(io)
+    conn = device(sensor)
+    data = read_sensor(conn)
     check_crc(data) || error("Checksum failure for HM3301")
 
-    SmartHomy.set!(io, :pm1, data[5]<<8 | data[6])
-    SmartHomy.set!(io, :pm2_5, data[7]<<8 | data[8])
-    SmartHomy.set!(io, :pm10, data[9]<<8 | data[10])
+    SmartHomy.set!(sensor, :pm1, (data[5]<<8 | data[6]) * μg_m³)
+    SmartHomy.set!(sensor, :pm2_5, (data[7]<<8 | data[8]) * μg_m³)
+    SmartHomy.set!(sensor, :pm10, (data[9]<<8 | data[10]) * μg_m³)
 
     # SmartHomy.set!(io, :pm1_atmospheric, data[11]<<8 | data[12])
     # SmartHomy.set!(io, :pm2_5_atmospheric, data[13]<<8 | data[14])

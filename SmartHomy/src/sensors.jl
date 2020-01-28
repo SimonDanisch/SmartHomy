@@ -1,18 +1,54 @@
-abstract type AbstractSensor end
-# The interface
-
-struct SensorData
+struct SensorData{T}
+    device::T
     poll_interval::Float64
-    isrunning::RefValue{Bool}
-    data::Observable{Dict{Symbol, Float64}}
+    isrunning::Threads.Atomic{Bool}
+    task::Ref{Task}
 end
 
-function SensorData(poll_interval::Number=2.0)
-    return SensorData(poll_interval, Ref(false), Observable(Dict{Symbol, Float64}()))
+function SensorData(device::T, poll_interval::Number=2.0) where T
+    return SensorData{T}(device, poll_interval, Threads.Atomic{Bool}(false),
+                         Ref{Task}())
 end
 
-function set!(sensor::AbstractSensor, name::Symbol, value)
-    data_observable(sensor)[][name] = value
+const °C = 1.0 * Unitful.°C
+const Percent = 1.0 * Unitful.percent
+const μg_m³ = 1.0 * (Unitful.μg / Unitful.m^3)
+
+const °C_Type = typeof(°C)
+const Percent_Type = typeof(Percent)
+const μg_m³_Type = typeof(μg_m³)
+
+struct TemperatureSensor{T} <: AbstractSensor
+    data::SensorData{T}
+    name::Attribute{String}
+    temperature::Attribute{°C_Type}
+end
+
+function TemperatureSensor(device::T; poll_interval=2.0) where T
+    TemperatureSensor{T}(SensorData(device, poll_interval), string(T), 0.0Unitful.°C => Readonly)
+end
+
+struct TemperatureHumiditySensor{T} <: AbstractSensor
+    data::SensorData{T}
+    name::Attribute{String}
+    temperature::Attribute{°C_Type}
+    humidity::Attribute{Percent_Type}
+end
+
+function TemperatureHumiditySensor(device::T; poll_interval=2.0) where T
+    TemperatureHumiditySensor{T}(SensorData(device, poll_interval), string(T), 0.0Unitful.°C => Readonly, 0.0Unitful.percent => Readonly)
+end
+
+struct DustSensor{T} <: AbstractSensor
+    data::SensorData{T}
+    name::Attribute{String}
+    pm1::Attribute{μg_m³_Type}
+    pm2_5::Attribute{μg_m³_Type}
+    pm10::Attribute{μg_m³_Type}
+end
+
+function DustSensor(device::T; poll_interval=2.0) where T
+    DustSensor{T}(SensorData(device, poll_interval), string(T), 0.0μg_m³ => Readonly, 0.0μg_m³ => Readonly, 0.0μg_m³ => Readonly)
 end
 
 """
@@ -21,6 +57,10 @@ Returns the sensor data struct
 """
 function sensor_data(sensor::AbstractSensor)
     return sensor.data
+end
+
+function device(sensor::AbstractSensor)
+    return sensor_data(sensor).device
 end
 
 """
@@ -47,42 +87,31 @@ Gets updated by read!(sensor)
 
 Note: Expected to block as long as it takes to read the sensor!
 """
-function Base.read!(sensor::AbstractSensor)::Dict{Symbol, Float64}
+function Base.read!(sensor::AbstractSensor)
     error("read! not implemented for $(typeof(sensor)).
           This is part of the basic sensor interface and needs to be implemented")
 end
 
-"""
-    current_data(sensor::AbstractSensor)
-Returns the current data of sensor.
-Gets updated by read!(sensor)
-
-Note: Should be copied before mutating!
-"""
-function data_observable(sensor::AbstractSensor)::Observable{Dict{Symbol, Float64}}
-    return sensor_data(sensor).data
-end
-
-"""
-    units(sensor::AbstractSensor)::NTuple{N, Symbol}
-Returns either one string, if sensor has the same units for all data.
-Returns Dict{Symbol, String} for a unit for each field.
-"""
-function units(sensor::AbstractSensor)::Union{String, Dict{Symbol, String}}
-    return "none"
-end
 
 function start!(sensor::AbstractSensor)
     # No need to start, if running already
     isrunning(sensor) && return
-    sensor_data(sensor).isrunning[] = true
-    observable = data_observable(sensor)
-    return @async while isrunning(sensor)
-        Base.read!(sensor)
-        # notify observable
-        Base.invokelatest(setindex!, observable, observable[])
-        sleep(poll_interval(sensor))
+    data = sensor_data(sensor)
+    data.isrunning[] = true
+    data.task[] = @async begin
+        try
+            while isrunning(sensor)
+                Base.read!(sensor)
+                sleep(poll_interval(sensor))
+            end
+        catch e
+            Base.show_backtrace(stderr, Base.catch_backtrace())
+            Base.showerror(stderr, e)
+        finally
+            data.isrunning[] = false
+        end
     end
+    return data.task[]
 end
 
 function stop!(sensor::AbstractSensor)

@@ -1,5 +1,6 @@
-using SmartHomy: SensorData, AbstractSensor
-import SmartHomy: units
+using SmartHomy: TemperatureHumiditySensor
+using SmartHomy: set!, device
+using Unitful
 
 const DHT = pyimport("Adafruit_DHT")
 
@@ -8,12 +9,15 @@ struct DHTConnection
     channel::Int
 end
 
-DHTSensor(type::Int, channel::Int) = DHTSensor(type, channel, SensorData())
+function DHTSensor(type::Int, channel::Int)
+    conn = DHTConnection(type, channel)
+    return TemperatureHumiditySensor(conn)
+end
 
 function Base.read!(sensor::TemperatureHumiditySensor{DHTConnection})
-    io = connection(sensor)
-    humidity, temperature = DHT.read_retry(io.type, io.channel)
-    set!(sensor, :temperature, temperature)
-    set!(sensor, :humidity, humidity)
+    conn = device(sensor)
+    humidity, temperature = DHT.read_retry(conn.type, conn.channel)
+    set!(sensor, :temperature, temperature * Unitful.°C)
+    set!(sensor, :humidity, humidity * Unitful.percent)
     return
 end
