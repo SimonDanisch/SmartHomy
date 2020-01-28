@@ -1,16 +1,11 @@
-__precompile__(false)
 module SmartHomy
 
 using JSServe, Observables
 using Base: RefValue
 using Markdown
 using Colors
-using JSServe.DOM
-using IntervalSets
-using Unitful
 
 abstract type SmartDevice end
-
 abstract type AbstractLight <: SmartDevice end
 abstract type AbstractPlug <: SmartDevice end
 abstract type AbstractSensor <: SmartDevice end

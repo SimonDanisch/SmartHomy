@@ -121,7 +121,9 @@ function query_devices()
                 device = DeviceConnection(ip)
                 devices[ip] = create_device(device, JSON3.read(decrypt(data)))
             catch e
-                @warn "error" exception=e
+                # TODO handle errors other than end of file (which is expected)
+                Base.showerror(stdout, e)
+                Base.show_backtrace(stdout, Base.catch_backtrace())
                 break
             end
         end

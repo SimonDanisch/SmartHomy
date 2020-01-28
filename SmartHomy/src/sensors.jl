@@ -1,5 +1,4 @@
 abstract type AbstractSensor end
-
 # The interface
 
 struct SensorData
@@ -78,7 +77,7 @@ function start!(sensor::AbstractSensor)
     isrunning(sensor) && return
     sensor_data(sensor).isrunning[] = true
     observable = data_observable(sensor)
-    @async while isrunning(sensor)
+    return @async while isrunning(sensor)
         Base.read!(sensor)
         # notify observable
         Base.invokelatest(setindex!, observable, observable[])
@@ -89,17 +88,4 @@ end
 function stop!(sensor::AbstractSensor)
     sensor_data(sensor).isrunning[] = false
     return
-end
-
-function JSServe.jsrender(sensor::AbstractSensor)
-    data = data_observable(sensor)
-    fields = collect(keys(data[]))
-    sensor_units = units(sensor)
-    elements = map(fields) do field
-        DOM.div(map(data) do d
-            u = sensor_units isa String ? sensor_units : sensor_units[field]
-            return string(field, ": ", round(d[field], digits=3), u)
-        end)
-    end
-    return DOM.div(elements...)
 end

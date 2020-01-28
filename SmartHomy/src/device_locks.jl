@@ -46,13 +46,3 @@ function Base.put!(new_task::Function, x::DeviceQueue)
         put!(x.channel, new_task)
     end
 end
-
-dq = DeviceQueue(DropAllButLast)
-
-for i in 1:5
-    put!(dq) do
-        tstart = time()
-        sleep(0.5)
-        println(i)
-    end
-end
