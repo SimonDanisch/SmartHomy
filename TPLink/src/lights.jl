@@ -29,7 +29,6 @@ function light_command(success_callback, device::DeviceConnection, message)
     send(success_callback, device, request)
 end
 
-
 function Light(device::DeviceConnection, sysinfo)
     ls = sysinfo.light_state
     light = if haskey(ls, "dft_on_state")
