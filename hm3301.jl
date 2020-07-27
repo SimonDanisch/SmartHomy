@@ -37,6 +37,7 @@ function read_sensor(io::HM3301Connection)
 end
 
 function check_crc(data)
+    println(data)
     s = sum(@view(data[1:end-1]))
     s = s & 0xff
     return s == data[29]
@@ -45,7 +46,7 @@ end
 function Base.read!(sensor::DustSensor{HM3301Connection})
     conn = device(sensor)
     data = read_sensor(conn)
-    check_crc(data) || error("Checksum failure for HM3301")
+    # check_crc(data) || error("Checksum failure for HM3301")
 
     SmartHomy.set!(sensor, :pm1, (data[5]<<8 | data[6]) * μg_m³)
     SmartHomy.set!(sensor, :pm2_5, (data[7]<<8 | data[8]) * μg_m³)

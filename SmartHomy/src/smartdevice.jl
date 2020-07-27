@@ -104,7 +104,6 @@ function Base.getproperty(device::SmartDevice, attribute_name::Symbol)
     end
 end
 
-
 function on_command(set_callback, device::SmartDevice, attribute_name::Symbol)
     attribute = getfield(device, attribute_name)
     on(attribute.input) do value
@@ -113,10 +112,10 @@ function on_command(set_callback, device::SmartDevice, attribute_name::Symbol)
 end
 
 function all_attributes(device::T) where {T<:SmartDevice}
-    result = AttributeField[]
+    result = Dict{Symbol, AttributeField}()
     for field in fieldnames(T)
         attribute = getfield(device, field)
-        attribute isa AttributeField && push!(result, attribute)
+        attribute isa AttributeField && (result[field] = attribute)
     end
     return result
 end
@@ -127,7 +126,7 @@ end
 
 function attribute_widget(attribute::Attribute{Bool})
     is_on = attribute.attribute
-    on_off_button = JSServe.Button(is_on[] ? "ON" : "OFF")
+    on_off_button = JSServe.Button(is_on[] ? "ON" : "OFF", class="p-1 m-1 rounded pr-2 pl-2 shadow-md hover:bg-gray-500")
     on(is_on) do val
         on_off_button.content[] = val ? "ON" : "OFF"
     end
@@ -152,14 +151,58 @@ function attribute_widget(attribute::RangedAttribute{T}) where T <: Number
     return slider
 end
 
+attribute_render(session::JSServe.Session, x) = JSServe.jsrender(session, x)
+
+function to_superscript(x)
+    superscripts = Dict(
+        '.' => '⋅',
+        '0' => '⁰',
+        '1' => '¹',
+        '2' => '²',
+        '3' => '³',
+        '4' => '⁴',
+        '5' => '⁵',
+        '6' => '⁶',
+        '7' => '⁷',
+        '8' => '⁸',
+        '9' => '⁹',
+        '+' => '⁺',
+        '-' => '⁻')
+
+    return join(map(x-> superscripts[x], collect(x)), "")
+
+end
+
+function attribute_render(session::JSServe.Session, x::Observable{T}) where T <: Quantity
+    str = map(x) do x
+        unit_str = replace(string(Unitful.unit(x)), r"\^([-\d]*)" => (x)-> to_superscript(x[2:end]))
+        return string(round(x.val, digits=2), unit_str)
+    end
+    JSServe.jsrender(session, str)
+end
+
+function attribute_render(session::JSServe.Session, x::Observable{T}) where T <: Colorant
+    return DOM.div(style=map(x-> "background-color: #" * Colors.hex(x), x), class="h-10 w-10 rounded-lg shadow-lg m-1")
+end
+
 function JSServe.jsrender(session::JSServe.Session, attribute::AttributeField)
     if is_readonly(attribute)
-        return JSServe.jsrender(session, attribute.attribute)
+        return attribute_render(session, attribute.attribute)
     else
         attribute_widget(attribute)
     end
 end
 
 function JSServe.jsrender(session::JSServe.Session, device::SmartDevice)
-    return DOM.div(all_attributes(device))
+    attributes = all_attributes(device)
+    title = DOM.div(get(attributes, :name, "NoName"), class="text-2xl font-bold")
+    delete!(attributes, :name)
+    fields = map(collect(attributes)) do (k, v)
+        DOM.div(string(k, ": "), DOM.div(attribute_render(session, v), class="text-gray-500"), class="flex flex-row justify-between")
+    end
+    return DOM.div(title, fields..., class="flex flex-col items-left")
+end
+
+function show_unit(x)
+    string(round(x.val, digits=2), )
 end
