@@ -14,9 +14,6 @@ Threads.@spawn begin
     foreach(start!, sensors)
 end
 
-foreach(stop!, sensors)
-foreach(start!, sensors)
-
 devices = TPLink.query_devices()
 
 lights = filter(x-> x isa AbstractLight, devices)
