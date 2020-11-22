@@ -1,7 +1,7 @@
-__precompile__(false)
 module SmartHomy
 
-using JSServe, Observables
+using JSServe
+using Observables
 using Base: RefValue
 using Markdown
 using Colors

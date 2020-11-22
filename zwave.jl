@@ -11,7 +11,7 @@ dispatcher = pyimport("pydispatch").dispatcher
 time = pyimport("time")
 
 function louie_network_started(network)
-    printlnln("Hello from network : I'm started : homeid $(network.home_id) - $(network.nodes_count) nodes were found.")
+    println("Hello from network : I'm started : homeid $(network.home_id) - $(network.nodes_count) nodes were found.")
 end
 
 function louie_network_failed(network)

@@ -1,24 +1,29 @@
+@info("loading packages")
+cd(@__DIR__)
 using PyCall, Markdown, JSServe
-push!(Base.LOAD_PATH, @__DIR__)
 using SmartHomy
 using TPLink
 using SmartHomy: start!, stop!, AbstractLight, AbstractPlug, μg_m³
 using JSServe.DOM
 
-include("hm3301.jl")
-include("lywsd02.jl")
-include("dht_sensors.jl")
+asset(dirs...) = JSServe.Asset(joinpath(@__DIR__, dirs...))
+js_asset(dirs...) = JSServe.Asset(JSServe.dependency_path(dirs...))
+@info("loading sensors")
+include("./Sensors/hm3301.jl")
+include("./Sensors/lywsd02.jl")
+include("./Sensors/dht_sensors.jl")
 
-sensors = [HM3301(), LYWSD02("E7:2E:00:B0:70:A4"), DHTSensor(22, 22)]
-Threads.@spawn begin
-    foreach(start!, sensors)
-end
+sensors = [HM3301(), LYWSD02("E7:2E:00:B0:70:A4"), DHTSensor(22)]
+foreach(start!, sensors)
 
+sleep(5)
+
+@info("Query TPLink")
+devices = TPLink.query_devices()
 devices = TPLink.query_devices()
 
 lights = filter(x-> x isa AbstractLight, devices)
 plugs = filter(x-> x isa AbstractPlug, devices)
-
 
 struct Card
     title::String
@@ -34,7 +39,7 @@ function JSServe.jsrender(s::JSServe.Session, card::Card)
 end
 
 function smarthomy(session, request)
-    img = DOM.img(src="https://raw.githubusercontent.com/JuliaLang/julia-logo-graphics/b5551ca7946b4a25746c045c15fbb8806610f8d0/images/old-style/three-balls.svg",
+    img = DOM.img(src=asset("julia-logo.svg"),
         width="40", class="inline-block")
 
     header = DOM.div(DOM.h1("Julia Smarthome", class="text-3xl font-bold"), img, class="flex-row flex justify-center")
@@ -42,8 +47,9 @@ function smarthomy(session, request)
     light_card = Card("Lights", lights)
     plug_card = Card("Plugs", plugs)
     dom = DOM.div(header, sensor_card, light_card, plug_card, class="md:text-2xl")
-    return DOM.div(JSServe.Asset(JSServe.dependency_path("styled.css")),
-                   JSServe.TailwindCSS, JSServe.MarkdownCSS, dom)
+    return DOM.div(js_asset("styled.css"), JSServe.TailwindCSS, JSServe.MarkdownCSS, dom)
 end
-
+@info("staring server")
 app = JSServe.Application(smarthomy, "0.0.0.0", 8081)
+@info("all started!")
+wait(app.server_task[])

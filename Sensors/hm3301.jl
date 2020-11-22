@@ -1,5 +1,6 @@
 using SmartHomy: set!, device, μg_m³
 using SmartHomy: DustSensor
+using PyCall
 const smbus2 = pyimport("smbus2")
 const i2c_msg = smbus2.i2c_msg
 const SMBusWrapper = smbus2.SMBusWrapper
