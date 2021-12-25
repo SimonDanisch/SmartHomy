@@ -118,3 +118,45 @@ function stop!(sensor::AbstractSensor)
     sensor_data(sensor).isrunning[] = false
     return
 end
+
+struct LightIntensitySensor{T} <: AbstractSensor
+    data::SensorData{T}
+    name::Attribute{String}
+    intensity::Attribute{Int}
+end
+
+function LightIntensitySensor(device::T; poll_interval=2.0) where T
+    LightIntensitySensor{T}(SensorData(device, poll_interval), string(T), 0.0 => Readonly)
+end
+
+function JSServe.jsrender(session::JSServe.Session, device::LightIntensitySensor)
+    title = DOM.div("Light Intensity", class="text-3xl font-bold")
+    field = map(device.intensity) do value
+        lightness = round(Int, clamp(value / 10, 0, 100))
+        c = "hsla(55,70%,$(lightness)%,1.0)"
+        style = "background-color: $(c)"
+        return DOM.div(value, style=style, class="m-2 rounded-lg shadow text-center text-gray-100")
+    end
+    return DOM.div(title, field, class="flex flex-col items-left")
+end
+
+struct AirQualitySensor{T} <: AbstractSensor
+    data::SensorData{T}
+    name::Attribute{String}
+    # the higher, the worse the air. 100 is where bad starts
+    pollution::Attribute{Int}
+end
+
+function AirQualitySensor(device::T; poll_interval=2.0) where T
+    AirQualitySensor{T}(SensorData(device, poll_interval), string(T), 0.0 => Readonly)
+end
+
+function JSServe.jsrender(session::JSServe.Session, device::AirQualitySensor)
+    title = DOM.div("Air Quality", class="text-3xl font-bold")
+    field = map(device.pollution) do pollution
+        c = pollution > 100.0 ? "#ff3601b5" : "#60f460c7"
+        style = "background-color: $(c)"
+        return DOM.div(pollution, style=style, class="rounded-lg shadow-md text-center text-gray-100")
+    end
+    return DOM.div(title, field, class="flex flex-col items-left")
+end

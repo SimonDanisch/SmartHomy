@@ -126,7 +126,8 @@ end
 
 function attribute_widget(attribute::Attribute{Bool})
     is_on = attribute.attribute
-    on_off_button = JSServe.Button(is_on[] ? "ON" : "OFF", class="p-1 m-1 rounded pr-2 pl-2 shadow-md hover:bg-gray-500")
+    style = "p-1 m-1 rounded pr-2 pl-2 shadow-md hover:bg-gray-500 hover:text-gray-100"
+    on_off_button = JSServe.Button(is_on[] ? "ON" : "OFF", class=style)
     on(is_on) do val
         on_off_button.content[] = val ? "ON" : "OFF"
     end
@@ -148,7 +149,7 @@ function attribute_widget(attribute::RangedAttribute{T}) where T <: Number
     on(slider) do val
         attribute[] = val
     end
-    return slider
+    return DOM.div(slider, class="w-64")
 end
 
 attribute_render(session::JSServe.Session, x) = JSServe.jsrender(session, x)
@@ -176,12 +177,12 @@ end
 function attribute_render(session::JSServe.Session, x::Observable{T}) where T <: Quantity
     str = map(x) do x
         unit_str = replace(string(Unitful.unit(x)), r"\^([-\d]*)" => (x)-> to_superscript(x[2:end]))
-        return string(round(x.val, digits=2), unit_str)
+        return DOM.div(string(round(x.val, digits=2), unit_str), style="white-space: nowrap;")
     end
-    JSServe.jsrender(session, str)
+    return JSServe.jsrender(session, str)
 end
 
-function attribute_render(session::JSServe.Session, x::Observable{T}) where T <: Colorant
+function attribute_render(::JSServe.Session, x::Observable{T}) where T <: Colorant
     return DOM.div(style=map(x-> "background-color: #" * Colors.hex(x), x), class="h-10 w-10 rounded-lg shadow-lg m-1")
 end
 
@@ -195,10 +196,10 @@ end
 
 function JSServe.jsrender(session::JSServe.Session, device::SmartDevice)
     attributes = all_attributes(device)
-    title = DOM.div(get(attributes, :name, "NoName"), class="text-2xl font-bold")
+    title = DOM.div(get(attributes, :name, "NoName"), class="text-3xl font-bold")
     delete!(attributes, :name)
     fields = map(collect(attributes)) do (k, v)
-        DOM.div(string(k, ": "), DOM.div(attribute_render(session, v), class="text-gray-500"), class="flex flex-row justify-between")
+        DOM.div(string(k, ": "), DOM.div(attribute_render(session, v), class="text-gray-500"), class="flex flex-nowrap flex-row justify-between")
     end
     return DOM.div(title, fields..., class="flex flex-col items-left")
 end

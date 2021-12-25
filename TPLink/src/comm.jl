@@ -92,7 +92,7 @@ function query_devices()
     try
         # Somehow, at least on windows, I need to send first,
         # which gets a permission error, but if I don't sent, I can't set enable_broadcast
-        send(socket, ip"255.255.255.255", 9999, "bla")
+        send(socket, ip"255.255.255.255", 9999, "bla\n")
     catch e
     end
 
@@ -109,9 +109,11 @@ function query_devices()
     query_str = JSON3.write(queries)
     query_encrypted = encrypt(query_str)[5:end]
 
-    for i in 1:3
+    for i in 1:5
         send(socket, ip"255.255.255.255", 9999, query_encrypted)
+        sleep(0.5)
     end
+
     devices = Dict{Any, Any}()
     @async begin
         while socket.status in (Sockets.StatusInit, Sockets.StatusOpen)
@@ -131,7 +133,7 @@ function query_devices()
     end
     lastlen = length(devices)
     while true
-        sleep(4.0)
+        sleep(6.0)
         if lastlen == length(devices)
             println("DONE")
             break
