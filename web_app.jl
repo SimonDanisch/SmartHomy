@@ -2,6 +2,7 @@
 
 @info("loading packages")
 cd(@__DIR__)
+using Revise
 using PyCall, Markdown, JSServe
 using SmartHomy
 using TPLink
@@ -18,7 +19,6 @@ include("./Sensors/hm3301.jl")
 include("./Sensors/lywsd02.jl")
 include("./Sensors/dht_sensors.jl")
 include("./Sensors/groove_sensors.jl")
-
 
 airquality = GroveAirQualitySensor(0)
 lightsensor = GroveLightSensor(6)

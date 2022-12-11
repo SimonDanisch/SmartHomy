@@ -19,7 +19,7 @@ function smarthomy(session, request)
     class = "grid auto-cols-max grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
     sensor_grid = DOM.div(sensor_card, light_card, plug_card, class=class)
     dom = DOM.div(header, sensor_grid, class="text-3xl w-full h-full")
-    return DOM.div(js_asset("styled.css"), JSServe.TailwindCSS, JSServe.MarkdownCSS, dom)
+    return DOM.div(asset("WebApp", "slider.css"), JSServe.TailwindCSS, JSServe.MarkdownCSS, dom)
 end
 
 if @isdefined(last_session)

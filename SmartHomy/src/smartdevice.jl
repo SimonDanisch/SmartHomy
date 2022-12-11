@@ -194,12 +194,22 @@ function JSServe.jsrender(session::JSServe.Session, attribute::AttributeField)
     end
 end
 
+function attribute_render(session, name::String, attribute)
+    attr = DOM.div(attribute_render(session, attribute), class="text-gray-500")
+    return DOM.div(string(k, ": "), attr, class="flex flex-nowrap flex-row justify-between")
+end
+
+function attribute_render(session, name::String, attribute)
+    attr = DOM.div(attribute_render(session, attribute), class="text-gray-500")
+    return DOM.div(string(k, ": "), attr, class="flex flex-nowrap flex-row justify-between")
+end
+
 function JSServe.jsrender(session::JSServe.Session, device::SmartDevice)
     attributes = all_attributes(device)
     title = DOM.div(get(attributes, :name, "NoName"), class="text-3xl font-bold")
     delete!(attributes, :name)
-    fields = map(collect(attributes)) do (k, v)
-        DOM.div(string(k, ": "), DOM.div(attribute_render(session, v), class="text-gray-500"), class="flex flex-nowrap flex-row justify-between")
+    fields = map(collect(attributes)) do (name, attribute)
+        attribute_render(session, name, attribute)
     end
     return DOM.div(title, fields..., class="flex flex-col items-left")
 end
