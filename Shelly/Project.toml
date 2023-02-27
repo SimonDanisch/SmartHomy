@@ -1,0 +1,8 @@
+name = "Shelly"
+uuid = "99f2762f-ce68-45b3-a20b-7e4c2e2eabb8"
+authors = ["SimonDanisch <sdanisch@protonmail.com>"]
+version = "0.1.0"
+
+[deps]
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+SmartHomy = "3d2a0549-7148-4531-9883-1dd8efb3c8c2"

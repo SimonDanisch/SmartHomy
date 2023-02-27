@@ -5,9 +5,9 @@ using Observables
 using Base: RefValue
 using Markdown
 using Colors
-using JSServe.DOM
 using IntervalSets
 using Unitful
+import JSServe.TailwindDashboard as D
 
 abstract type SmartDevice end
 
