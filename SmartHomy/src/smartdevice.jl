@@ -149,6 +149,9 @@ function attribute_widget(session::Session, attribute::RangedAttribute{T}) where
     on(session, slider.value) do val
         attribute[] = val
     end
+    on(session, attribute.value) do val
+        attribute[] = val
+    end
     return DOM.div(slider, class="w-64")
 end
 

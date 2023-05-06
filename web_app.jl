@@ -25,7 +25,7 @@ device2 = Shelly.Device("192.168.178.30")
 device3 = Shelly.Device("192.168.178.51")
 plugs = [device1, device2, device3]
 
-include("webpage.jl")
+include("webpage.jl");
 # reload_task = @async while isfile("webpage.jl")
 #     fm = FileWatching.watch_file("webpage.jl")
 #     try
