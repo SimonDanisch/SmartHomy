@@ -1,0 +1,12 @@
+[deps]
+BaremetalPi = "3a90a9a9-52f9-452b-94bd-193d585bd84f"
+FritzHome = "d73ee456-9fb4-447e-b0c2-381b9e085cfd"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+Hyperscript = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+JSServe = "824d6782-a2ef-11e9-3a09-e5662e0c26f9"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+Shelly = "99f2762f-ce68-45b3-a20b-7e4c2e2eabb8"
+SmartHomy = "3d2a0549-7148-4531-9883-1dd8efb3c8c2"
+TPLink = "c65224a3-a8b0-42f7-907c-fee1b2321806"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"

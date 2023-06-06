@@ -1,13 +1,13 @@
-__precompile__(false)
 module SmartHomy
 
-using JSServe, Observables
+using JSServe
+using Observables
 using Base: RefValue
 using Markdown
 using Colors
-using JSServe.DOM
 using IntervalSets
 using Unitful
+import JSServe.TailwindDashboard as D
 
 abstract type SmartDevice end
 

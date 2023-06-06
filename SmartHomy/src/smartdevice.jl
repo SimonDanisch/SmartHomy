@@ -41,7 +41,7 @@ function Base.convert(::Type{Attribute{T}}, value) where {T}
     AttributeField(Observable(convert(T, value)), nothing, ReadWrite, "")
 end
 
-function Base.convert(::Type{Attribute{T}}, value::Pair{Y, AccesPattern}) where {T, VR, Y}
+function Base.convert(::Type{Attribute{T}}, value::Pair{Y, AccesPattern}) where {T, Y}
     AttributeField(Observable(convert(T, value[1])), nothing, value[2], "")
 end
 
@@ -61,7 +61,7 @@ function Base.convert(::Type{AttributeField{T, VR}}, value_fields::Pair{Y, Pair{
     AttributeField(Observable(value_conv), range, access, "")
 end
 
-function Base.convert(::Type{Attribute{T}}, value::Pair{Y, String}) where {T, VR, Y}
+function Base.convert(::Type{Attribute{T}}, value::Pair{Y, String}) where {T, Y}
     value_conv = convert(T, value[1])
     AttributeField(Observable(value_conv), nothing, ReadWrite, value[2])
 end
@@ -120,35 +120,38 @@ function all_attributes(device::T) where {T<:SmartDevice}
     return result
 end
 
-function attribute_widget(attribute::Attribute{String})
+function attribute_widget(session::Session, attribute::Attribute{String})
     return DOM.div(attribute.attribute)
 end
 
-function attribute_widget(attribute::Attribute{Bool})
+const ITEM_PAD_MARG = "m-2 p-2"
+
+function attribute_widget(session::Session, attribute::Attribute{Bool})
     is_on = attribute.attribute
-    on_off_button = JSServe.Button(is_on[] ? "ON" : "OFF", class="p-1 m-1 rounded pr-2 pl-2 shadow-md hover:bg-gray-500")
-    on(is_on) do val
+    style = "w-12 rounded mx-1 px-1 shadow-md hover:bg-gray-500 hover:text-gray-100"
+    on_off_button = JSServe.Button(is_on[] ? "ON" : "OFF", class=style)
+    on(session, is_on) do val
         on_off_button.content[] = val ? "ON" : "OFF"
     end
-    on(on_off_button) do val
+    on(session, on_off_button.value) do val
         attribute[] = !is_on[]
     end
     return on_off_button
 end
 
-function attribute_widget(attribute::RangedAttribute{T}) where T <: Number
+function attribute_widget(session::Session, attribute::RangedAttribute{T}) where T <: Number
     start, stop = extrema(attribute.value_range)
     tick = if T <: Integer
         (stop - start) / 100
     else
         (stop - start) ÷ 100
     end
-    slider = JSServe.Slider(start:tick:stop, class="custom-range")
+    slider = JSServe.Slider(start:tick:stop, class="custom-range p-1 m-1 pr-2 pl-2 w-56")
     slider[] = attribute[]
-    on(slider) do val
+    on(session, slider.value) do val
         attribute[] = val
     end
-    return slider
+    return DOM.div(slider, class="w-96")
 end
 
 attribute_render(session::JSServe.Session, x) = JSServe.jsrender(session, x)
@@ -170,37 +173,45 @@ function to_superscript(x)
         '-' => '⁻')
 
     return join(map(x-> superscripts[x], collect(x)), "")
-
 end
 
 function attribute_render(session::JSServe.Session, x::Observable{T}) where T <: Quantity
-    str = map(x) do x
+    str = map(session, x) do x
         unit_str = replace(string(Unitful.unit(x)), r"\^([-\d]*)" => (x)-> to_superscript(x[2:end]))
-        return string(round(x.val, digits=2), unit_str)
+        return DOM.div(string(round(x.val, digits=2), unit_str), style="white-space: nowrap;")
     end
-    JSServe.jsrender(session, str)
+    return JSServe.jsrender(session, str)
 end
 
 function attribute_render(session::JSServe.Session, x::Observable{T}) where T <: Colorant
-    return DOM.div(style=map(x-> "background-color: #" * Colors.hex(x), x), class="h-10 w-10 rounded-lg shadow-lg m-1")
+    style = map(x-> "background-color: #" * Colors.hex(x), session, x)
+    return DOM.div(style=style, class="h-5 w-5 rounded-lg shadow-lg m-1")
 end
 
 function JSServe.jsrender(session::JSServe.Session, attribute::AttributeField)
     if is_readonly(attribute)
         return attribute_render(session, attribute.attribute)
     else
-        attribute_widget(attribute)
+        return attribute_widget(session, attribute)
     end
+end
+
+function attribute_render(session, name::String, attribute)
+    attr = DOM.div(attribute_render(session, attribute), class="text-gray-500")
+    label = DOM.span(string(name, ": "); class="")
+    class = "flex flex-row flex-wrap justify-items-center my-1 shrink"
+    return DOM.div(label, attr, class=class)
 end
 
 function JSServe.jsrender(session::JSServe.Session, device::SmartDevice)
     attributes = all_attributes(device)
-    title = DOM.div(get(attributes, :name, "NoName"), class="text-2xl font-bold")
+    name = get(attributes, :name, Observable("NoName"))
+    title = DOM.div(name[], class="text-lg font-bold")
     delete!(attributes, :name)
-    fields = map(collect(attributes)) do (k, v)
-        DOM.div(string(k, ": "), DOM.div(attribute_render(session, v), class="text-gray-500"), class="flex flex-row justify-between")
+    fields = map(collect(attributes)) do (name, attribute)
+        attribute_render(session, string(name), attribute)
     end
-    return DOM.div(title, fields..., class="flex flex-col items-left")
+    return JSServe.jsrender(session, DOM.div(title, fields..., class="flex flex-col items-left px-2"))
 end
 
 function show_unit(x)
