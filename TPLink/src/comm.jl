@@ -56,7 +56,7 @@ function Sockets.send(success_callback, device::DeviceConnection, message)
             close(socket)
             success_callback(JSON3.read(decrypt(data)))
         catch e
-            @info "error" exception=e
+            @warn "Eror in send" exception=(e, Base.catch_backtrace())
         finally
             close(socket)
         end

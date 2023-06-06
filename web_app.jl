@@ -2,8 +2,8 @@
 
 @info("loading packages")
 cd(@__DIR__)
-using Revise
 using PyCall, Markdown, JSServe
+ENV["JULIA_DEBUG"] = JSServe
 using SmartHomy
 using SmartHomy: start!, stop!, AbstractLight, AbstractPlug, μg_m³
 using TPLink
@@ -18,33 +18,21 @@ asset(dirs...) = JSServe.Asset(joinpath(@__DIR__, dirs...))
 devices = TPLink.query_devices()
 
 lights = filter(x-> x isa AbstractLight, devices)
-plugs = filter(x-> x isa AbstractPlug, devices)
+tp_plugs = filter(x-> x isa AbstractPlug, devices)
 
 device1 = Shelly.Device("192.168.178.29")
 device2 = Shelly.Device("192.168.178.30")
 device3 = Shelly.Device("192.168.178.51")
-plugs = [device1, device2, device3]
+plugs = [device1, device2, device3, tp_plugs...]
 
 include("webpage.jl");
-# reload_task = @async while isfile("webpage.jl")
-#     fm = FileWatching.watch_file("webpage.jl")
-#     try
-#         @info("reloading webpage")
-#         include("webpage.jl")
-#     catch e
-#         @warn "couldnt reload" execption=e
-#     end
-# end
+
 
 @info("starting server")
-app = JSServe.Server(smarthomy, "0.0.0.0", 8081)
+app = JSServe.Server(smarthomy, "0.0.0.0", 8888)
+app.proxy_url = "http://mini-server.fritz.box:8888"
+route!(app, "/" => smarthomy)
 @info("all started!")
-wait(app.server_task[])
 
-# using Shelly
-# using PyCall
-# pyShelly = PyCall.pyimport("pyShelly")
 
-# shelly = pyShelly.pyShelly()
-# shelly.start()
-# shelly.discover()
+l = lights[1]

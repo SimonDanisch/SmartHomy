@@ -1,8 +1,9 @@
 #https://build.julialang.org/#/
 #https://s3.amazonaws.com/julialangnightlies/assert_pretesting/linux/armv7l/1.6/julia-a8393c4a3b-linuxarmv7l.tar.gz
+using PyCall
 run(`sudo apt install libgpiod2 libglib2.0-dev`)
 run(`$(PyCall.python) -m pip install lywsd02 smbus2 grovepi adafruit-circuitpython-lis3dh adafruit-circuitpython-dht`)
-run(`$(PyCall.python) -m pip install pyShelly`)
+# run(`$(PyCall.python) -m pip install pyShelly`)
 run(`$(PyCall.python) -m pip install ShellyPy`)
 http://192.168.178.30/
 #=

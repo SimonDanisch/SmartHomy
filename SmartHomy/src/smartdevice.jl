@@ -124,9 +124,11 @@ function attribute_widget(session::Session, attribute::Attribute{String})
     return DOM.div(attribute.attribute)
 end
 
+const ITEM_PAD_MARG = "m-2 p-2"
+
 function attribute_widget(session::Session, attribute::Attribute{Bool})
     is_on = attribute.attribute
-    style = "p-1 m-1 rounded pr-2 pl-2 shadow-md hover:bg-gray-500 hover:text-gray-100"
+    style = "w-12 rounded mx-1 px-1 shadow-md hover:bg-gray-500 hover:text-gray-100"
     on_off_button = JSServe.Button(is_on[] ? "ON" : "OFF", class=style)
     on(session, is_on) do val
         on_off_button.content[] = val ? "ON" : "OFF"
@@ -144,15 +146,12 @@ function attribute_widget(session::Session, attribute::RangedAttribute{T}) where
     else
         (stop - start) ÷ 100
     end
-    slider = JSServe.Slider(start:tick:stop, class="custom-range p-1 m-1 pr-2 pl-2 w-full")
+    slider = JSServe.Slider(start:tick:stop, class="custom-range p-1 m-1 pr-2 pl-2 w-56")
     slider[] = attribute[]
     on(session, slider.value) do val
         attribute[] = val
     end
-    on(session, attribute.value) do val
-        attribute[] = val
-    end
-    return DOM.div(slider, class="w-64")
+    return DOM.div(slider, class="w-96")
 end
 
 attribute_render(session::JSServe.Session, x) = JSServe.jsrender(session, x)
@@ -186,7 +185,7 @@ end
 
 function attribute_render(session::JSServe.Session, x::Observable{T}) where T <: Colorant
     style = map(x-> "background-color: #" * Colors.hex(x), session, x)
-    return DOM.div(style=style, class="h-10 w-10 rounded-lg shadow-lg m-1")
+    return DOM.div(style=style, class="h-5 w-5 rounded-lg shadow-lg m-1")
 end
 
 function JSServe.jsrender(session::JSServe.Session, attribute::AttributeField)
@@ -199,18 +198,20 @@ end
 
 function attribute_render(session, name::String, attribute)
     attr = DOM.div(attribute_render(session, attribute), class="text-gray-500")
-    return DOM.div(string(name, ": "), attr, class="flex flex-nowrap flex-row justify-between")
+    label = DOM.span(string(name, ": "); class="")
+    class = "flex flex-row flex-wrap justify-items-center my-1 shrink"
+    return DOM.div(label, attr, class=class)
 end
 
 function JSServe.jsrender(session::JSServe.Session, device::SmartDevice)
     attributes = all_attributes(device)
     name = get(attributes, :name, Observable("NoName"))
-    title = DOM.div(name[], class="text-3xl font-bold")
+    title = DOM.div(name[], class="text-lg font-bold")
     delete!(attributes, :name)
     fields = map(collect(attributes)) do (name, attribute)
         attribute_render(session, string(name), attribute)
     end
-    return JSServe.jsrender(session, DOM.div(title, fields..., class="flex flex-col items-left"))
+    return JSServe.jsrender(session, DOM.div(title, fields..., class="flex flex-col items-left px-2"))
 end
 
 function show_unit(x)
